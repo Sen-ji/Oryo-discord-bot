@@ -43,7 +43,7 @@ bot.on('message', function (message) {
     } else if (mes[0] == "groupe") {
         groupe(mes)
     }
-    if (message.channel.name == "terminal" && message.author.username != "Oryo") {
+    if (message.channel.name == "terminal" && message.author.id == "191277501035708417") {
         console.log(message.author.username)
         try {
             message.channel.send(eval(message.content))
@@ -58,29 +58,55 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
     let channelLeave = oldState.channel
 
 
-    if (channelJoin !== null && cat[channelJoin.parentID].chan[channelJoin.id].multi == 1) { //join total
-        console.log(cat[channelJoin.parentID].chan[channelJoin.id])
-        console.log("channel vocal multi rejoin")
+    if (channelJoin !== null) { //join total
 
+        console.log("channel vocal multi rejoin")
+        var channelSubber;
         var vide = 0;
-        //donc on regarde s'il existe un channel vide de ce type
-        for (var chan in cat[channelJoin.parentID].chan) {
-            console.log(chan)
-            if (serveur.channels.cache.find(c => c.id == chan).members.first(1)[0] == undefined && cat[channelJoin.parentID].chan[channelJoin.id].id.indexOf(channelJoin.id) != -1) {
-                vide++;
+
+
+        for (var channel in cat[channelJoin.parentID].chan) {
+            //console.log(cat[channelJoin.parentID].chan)
+            //console.log(cat[channelJoin.parentID].chan[channel])
+            if (cat[channelJoin.parentID].chan[channel].multi == 1 && cat[channelJoin.parentID].chan[channel].id.indexOf(channelJoin.id) != -1) {
+                channelSubber = cat[channelJoin.parentID].chan[channel].id[0]
+                //console.log("channelSubber = "+ channelSubber)
+                for (var i = 0; i < cat[channelJoin.parentID].chan[channel].id.length - 1; i++) {
+                    console.log(cat[channelJoin.parentID].chan[channel].id[i])
+                    if (serveur.channels.cache.find(c => c.id == cat[channelJoin.parentID].chan[channel].id[i]).members.first(1)[0] == undefined) {
+                        vide++;
+                    }
+                }
+
+                if (serveur.channels.cache.find(c => c.id == channel).members.first(1)[0] == undefined) {
+                    vide++;
+                }
+                console.log(vide)
+                if (vide == 0) {
+                    makeSubChannel(cat[channelJoin.parentID].chan[channelJoin.id].name, channelJoin.parentID, channelSubber)
+                }
             }
+
+
         }
-        console.log(vide)
-        if (vide == 0) {
-            //makeChannel(channelJoin.name, "voice", cat[channelJoin.name][0])
-            //serveur.channels.cache.find(c => c.id ==  cat[channelJoin.parentID].chan[channelJoin].id).setPosition(channelJoin.parent.Position)
-            //serveur.channels.cache.find(c => c.id == cat[channelJoin.name][cat[channelJoin.name].length - 1]).setPosition(1);
-        }
+
         //quand quelqu'un join, il faut, s'il n'y as pas de channel vide, que ça en créer un
         //que ce channel vide soit remonter au dessus
     }
     if (channelLeave !== null && cat[channelLeave.parentID].chan[channelLeave.id].multi == 1) { //leave ou switch
         console.log("channel vocal multi quitter")
+
+
+        for (var channel in cat[channelLeave.parentID].chan) {
+            //console.log(cat[channelJoin.parentID].chan)
+            //console.log(cat[channelJoin.parentID].chan[channel])
+            if (cat[channelLeave.parentID].chan[channel].multi == 1 && cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id) != -1) { 
+                //si le channel leave est un channel multi
+                if(cat[channelLeave.parentID].chan[channel].id.length > 2 && serveur.channels.cache.find(c => c.id == channelLeave.id).members.first(1)[0] == null){
+                    deleteSubChannel(channelLeave.parentID, channel)
+                }
+            }
+        }
         /*if (channelLeave != null && cat[channelLeave.name].length > 2 && serveur.channels.cache.find(c => c.id == channelLeave.id).members.first(1)[0] == null) {
             cat[channelLeave.name].splice(cat[channelLeave.name].indexOf(channelLeave.id), 1)
             channelLeave.delete();
@@ -100,7 +126,8 @@ function makeChannel(name, type, parent, chanString) {
                 console.log("création d'un channel enfant")
                 channel.setParent(parent);
                 cat[parent].chan[id] = {}
-                cat[parent].chan[id].id = [Array([id])]
+                cat[parent].chan[id].id = [id]
+                cat[parent].chan[id].name = name
                 cat[parent].chan[id].userlimit = 0
                 if (chanString.split(".").length > 2 && chanString.split(".")[2] > 0) {
                     cat[parent].chan[id].userlimit = chanString.split(".")[2]
@@ -119,11 +146,13 @@ function makeChannel(name, type, parent, chanString) {
                  *              role : {},
                  *              chan : {
                  *                      123456 : {
+                 *                              name : oui,
                  *                              userlimit : 0
                  *                              multi : 0
                  *                              id : ["123456"]
                  *                              },
                  *                      159987 : {
+                 *                              name : non,
                  *                              multi : 1,
                  *                              userlimit : 5,
                  *                              id : ["159987","168487"]
@@ -141,9 +170,10 @@ function makeChannel(name, type, parent, chanString) {
                 cat[id].role = {}
                 cat[id].chan = {}
                 cat[id].chan[id] = {}
+                cat[id].chan[id].name = name
                 cat[id].chan[id].multi = 0
                 cat[id].chan[id].userlimit = 0
-                cat[id].chan[id].id = Array([id])
+                cat[id].chan[id].id = [id]
             }
 
         })
@@ -153,6 +183,25 @@ function makeChannel(name, type, parent, chanString) {
 
     }, 500);
 
+}
+function makeSubChannel(name, parent, idSubber) {
+    console.log("subchannel ! " + idSubber)
+    serveur.channels.create(name, { type: "voice" })
+        .then(channel => {
+            channel.setParent(serveur.channels.cache.find(c => c.id == parent))
+            setTimeout(function () {
+                console.log("position : " + cat[parent].chan[idSubber].id.length + " " + serveur.channels.cache.find(c => c.id == idSubber).position)
+                channel.setPosition(cat[parent].chan[idSubber].id.length + serveur.channels.cache.find(c => c.id == idSubber).position - 1)
+
+            }, 500);
+            cat[parent].chan[idSubber].id.push(channel.id)
+
+        })
+        .catch(console.error);
+
+}
+function deleteSubChannel(parentId, id){
+ 
 }
 function startGuild() {
     general.send(`
@@ -240,9 +289,4 @@ function groupe(mes) {
     }, 500);
 
 }
-
-
-
-
-
 bot.login(Token);
