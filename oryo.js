@@ -13,8 +13,8 @@ const {
 
 bot.on('ready', function () {
     console.log("lancement du bot")
-    serveur = bot.channels.cache.find(c => c.id == "682421626846969907").guild
-    general = bot.channels.cache.find(c => c.id == "687461489711382594")
+    serveur = bot.channels.cache.get("682421626846969907").guild
+    general = bot.channels.cache.get("687461489711382594")
     bot.channels.cache.forEach(element => {
         if (element.id != "682421626846969907" && element.id != "687461489711382594" && element.id != "688066841557598258") {
             element.delete()
@@ -73,12 +73,12 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
                 //console.log("channelSubber = "+ channelSubber)
                 for (var i = 0; i < cat[channelJoin.parentID].chan[channel].id.length - 1; i++) {
                     console.log(cat[channelJoin.parentID].chan[channel].id[i])
-                    if (serveur.channels.cache.find(c => c.id == cat[channelJoin.parentID].chan[channel].id[i]).members.first(1)[0] == undefined) {
+                    if (serveur.channels.cache.get(cat[channelJoin.parentID].chan[channel].id[i]).members.first(1)[0] == undefined) {
                         vide++;
                     }
                 }
 
-                if (serveur.channels.cache.find(c => c.id == channel).members.first(1)[0] == undefined) {
+                if (serveur.channels.cache.get(channel).members.first(1)[0] == undefined) {
                     vide++;
                 }
                 console.log(vide)
@@ -98,12 +98,15 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
 
 
         for (var channel in cat[channelLeave.parentID].chan) {
-            //console.log(cat[channelJoin.parentID].chan)
-            //console.log(cat[channelJoin.parentID].chan[channel])
-            if (cat[channelLeave.parentID].chan[channel].multi == 1 && cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id) != -1) { 
-                //si le channel leave est un channel multi
-                if(cat[channelLeave.parentID].chan[channel].id.length > 2 && serveur.channels.cache.find(c => c.id == channelLeave.id).members.first(1)[0] == null){
-                    deleteSubChannel(channelLeave.parentID, channel)
+            //console.log(cat[channelLeave.parentID].chan[channel].multi)
+            //console.log(cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id))
+            if (cat[channelLeave.parentID].chan[channel].multi == 1 && cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id) != -1) {
+                console.log("le channel leave est un channel multi")
+                console.log(cat[channelLeave.parentID].chan[channel].id.length)
+                console.log(serveur.channels.cache.get(channelLeave.id).members.first(1)[0])
+                if (cat[channelLeave.parentID].chan[channel].id.length >= 2 && serveur.channels.cache.get(channelLeave.id).members.first(1)[0] == undefined) {
+
+                    deleteSubChannel(channelLeave.id, channelLeave.parentID, channel)
                 }
             }
         }
@@ -138,29 +141,7 @@ function makeChannel(name, type, parent, chanString) {
                 } else {
                     cat[parent].chan[id].multi = 0
                 }
-                /**
-                 * donc structure exemple de cat :
-                 * cat : {
-                 *      123456 :{
-                 *              name : "bonjour",
-                 *              role : {},
-                 *              chan : {
-                 *                      123456 : {
-                 *                              name : oui,
-                 *                              userlimit : 0
-                 *                              multi : 0
-                 *                              id : ["123456"]
-                 *                              },
-                 *                      159987 : {
-                 *                              name : non,
-                 *                              multi : 1,
-                 *                              userlimit : 5,
-                 *                              id : ["159987","168487"]
-                 *                              },
-                 *                      }
-                 *              }
-                 *      }
-                 */
+
             }
             else {
 
@@ -188,10 +169,10 @@ function makeSubChannel(name, parent, idSubber) {
     console.log("subchannel ! " + idSubber)
     serveur.channels.create(name, { type: "voice" })
         .then(channel => {
-            channel.setParent(serveur.channels.cache.find(c => c.id == parent))
+            channel.setParent(serveur.channels.cache.get(parent))
             setTimeout(function () {
-                console.log("position : " + cat[parent].chan[idSubber].id.length + " " + serveur.channels.cache.find(c => c.id == idSubber).position)
-                channel.setPosition(cat[parent].chan[idSubber].id.length + serveur.channels.cache.find(c => c.id == idSubber).position - 1)
+                console.log("position : " + cat[parent].chan[idSubber].id.length + " " + serveur.channels.cache.get(idSubber).position)
+                channel.setPosition(cat[parent].chan[idSubber].id.length + serveur.channels.cache.get(idSubber).position - 1)
 
             }, 500);
             cat[parent].chan[idSubber].id.push(channel.id)
@@ -200,8 +181,13 @@ function makeSubChannel(name, parent, idSubber) {
         .catch(console.error);
 
 }
-function deleteSubChannel(parentId, id){
- 
+function deleteSubChannel(id, parentId, idtab) {
+    //1 = id du channel leave, 2 = id de la catégorie, 3 = le nom du groupe
+    console.log("function delete sub")
+    console.log(id)
+    serveur.channels.cache.get(id).delete()
+    console.log(cat[parentId].chan[idtab])
+    cat[parentId].chan[idtab].id.splice(cat[parentId].chan[idtab].id.indexOf(id), 1)
 }
 function startGuild() {
     general.send(`
@@ -225,7 +211,7 @@ function commandAdd(mes) {
 function commandDel(mes) {
     if (cat[mes[1]] != null) {
         cat[mes[1]].forEach(id => {
-            serveur.channels.cache.find(c => c.id == id).delete()
+            serveur.channels.cache.get(id).delete()
         })
         cat[mes[1]] = null
     } else {
@@ -285,7 +271,6 @@ function groupe(mes) {
 
             makeChannel(a[0], type, parentAct, channel)
         });
-
     }, 500);
 
 }
