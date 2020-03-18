@@ -63,7 +63,29 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
         console.log("channel vocal multi rejoin")
         var channelSubber;
         var vide = 0;
-
+/**
+                 * donc structure exemple de cat :
+                 * cat : {
+                 *      123456 :{
+                 *              name : "bonjour",
+                 *              role : {},
+                 *              chan : {
+                 *                      123456 : {
+                 *                              name : oui,
+                 *                              userlimit : 0
+                 *                              multi : 0
+                 *                              id : ["123456"]
+                 *                              },
+                 *                      159987 : {
+                 *                              name : non,
+                 *                              multi : 1,
+                 *                              userlimit : 5,
+                 *                              id : ["159987","168487"]
+                 *                              },
+                 *                      }
+                 *              }
+                 *      }
+                 */
 
         for (var channel in cat[channelJoin.parentID].chan) {
             //console.log(cat[channelJoin.parentID].chan)
@@ -78,12 +100,9 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
                     }
                 }
 
-                if (serveur.channels.cache.get(channel).members.first(1)[0] == undefined) {
-                    vide++;
-                }
                 console.log(vide)
                 if (vide == 0) {
-                    makeSubChannel(cat[channelJoin.parentID].chan[channelJoin.id].name, channelJoin.parentID, channelSubber)
+                    makeSubChannel(cat[channelJoin.parentID].chan[channel].name, channelJoin.parentID, channel)
                 }
             }
 
@@ -93,14 +112,14 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
         //quand quelqu'un join, il faut, s'il n'y as pas de channel vide, que ça en créer un
         //que ce channel vide soit remonter au dessus
     }
-    if (channelLeave !== null && cat[channelLeave.parentID].chan[channelLeave.id].multi == 1) { //leave ou switch
+    if (channelLeave !== null ) { //leave ou switch
         console.log("channel vocal multi quitter")
 
 
         for (var channel in cat[channelLeave.parentID].chan) {
             //console.log(cat[channelLeave.parentID].chan[channel].multi)
             //console.log(cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id))
-            if (cat[channelLeave.parentID].chan[channel].multi == 1 && cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id) != -1) {
+            if (cat[channelLeave.parentID].chan[channel].multi == 1 && cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id) != -1 &&cat[channelLeave.parentID].chan[channel].multi == 1) {
                 console.log("le channel leave est un channel multi")
                 console.log(cat[channelLeave.parentID].chan[channel].id.length)
                 console.log(serveur.channels.cache.get(channelLeave.id).members.first(1)[0])
@@ -165,17 +184,17 @@ function makeChannel(name, type, parent, chanString) {
     }, 500);
 
 }
-function makeSubChannel(name, parent, idSubber) {
-    console.log("subchannel ! " + idSubber)
+function makeSubChannel(name, parent, groupeSubber) {
+    console.log("subchannel ! " + groupeSubber)
     serveur.channels.create(name, { type: "voice" })
         .then(channel => {
             channel.setParent(serveur.channels.cache.get(parent))
             setTimeout(function () {
-                console.log("position : " + cat[parent].chan[idSubber].id.length + " " + serveur.channels.cache.get(idSubber).position)
-                channel.setPosition(cat[parent].chan[idSubber].id.length + serveur.channels.cache.get(idSubber).position - 1)
+                console.log("position : " + cat[parent].chan[groupeSubber].id.length + " " + serveur.channels.cache.get(cat[parent].chan[groupeSubber].id[0]).position)
+                channel.setPosition(cat[parent].chan[groupeSubber].id.length + serveur.channels.cache.get(cat[parent].chan[groupeSubber].id[0]).position - 1)
 
             }, 500);
-            cat[parent].chan[idSubber].id.push(channel.id)
+            cat[parent].chan[groupeSubber].id.push(channel.id)
 
         })
         .catch(console.error);
@@ -187,7 +206,10 @@ function deleteSubChannel(id, parentId, idtab) {
     console.log(id)
     serveur.channels.cache.get(id).delete()
     console.log(cat[parentId].chan[idtab])
+    //if(id ==idtab)
     cat[parentId].chan[idtab].id.splice(cat[parentId].chan[idtab].id.indexOf(id), 1)
+    console.log(cat[parentId].chan[idtab])
+
 }
 function startGuild() {
     general.send(`
