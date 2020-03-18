@@ -102,7 +102,7 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
 
                 console.log(vide)
                 if (vide == 0) {
-                    makeSubChannel(cat[channelJoin.parentID].chan[channel].name, channelJoin.parentID, channel)
+                    makeSubChannel(channelJoin.name, channelJoin.parentID, channel)
                 }
             }
 
@@ -120,12 +120,16 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
             //console.log(cat[channelLeave.parentID].chan[channel].multi)
             //console.log(cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id))
             if (cat[channelLeave.parentID].chan[channel].multi == 1 && cat[channelLeave.parentID].chan[channel].id.indexOf(channelLeave.id) != -1 &&cat[channelLeave.parentID].chan[channel].multi == 1) {
-                console.log("le channel leave est un channel multi")
-                console.log(cat[channelLeave.parentID].chan[channel].id.length)
-                console.log(serveur.channels.cache.get(channelLeave.id).members.first(1)[0])
+                //console.log("le channel leave est un channel multi")
+                //console.log(cat[channelLeave.parentID].chan[channel].id.length)
+                //console.log(serveur.channels.cache.get(channelLeave.id).members.first(1)[0])
                 if (cat[channelLeave.parentID].chan[channel].id.length >= 2 && serveur.channels.cache.get(channelLeave.id).members.first(1)[0] == undefined) {
 
                     deleteSubChannel(channelLeave.id, channelLeave.parentID, channel)
+                    console.log(cat[channelLeave.parentID].chan[channel].id.length)
+                    if (cat[channelLeave.parentID].chan[channel].id.length == 1 && channelJoin!=null && channelJoin.name == channelLeave.name)
+                    makeSubChannel(channelLeave.name, channelLeave.parentID,channel)
+                
                 }
             }
         }
@@ -206,7 +210,6 @@ function deleteSubChannel(id, parentId, idtab) {
     console.log(id)
     serveur.channels.cache.get(id).delete()
     console.log(cat[parentId].chan[idtab])
-    //if(id ==idtab)
     cat[parentId].chan[idtab].id.splice(cat[parentId].chan[idtab].id.indexOf(id), 1)
     console.log(cat[parentId].chan[idtab])
 
